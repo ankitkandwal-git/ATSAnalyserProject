@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { FaEnvelope, FaLock } from "react-icons/fa";
 
+const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -9,11 +11,18 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('')
+
+    if (!API_URL) {
+      setError('API URL is not configured. Set VITE_API_URL in frontend/.env.');
+      return;
+    }
+
     try{
         if(!email || !password){
             setError('Please fill in all fields')
+        return;
         }
-        const response = await fetch('http://localhost:5000/auth/login', {
+      const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

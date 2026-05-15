@@ -9,7 +9,13 @@ connectDB();
 
 const app = express();
 
-app.use(cors());
+const frontendOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map((origin) => origin.trim().replace(/\/$/, '')).filter(Boolean)
+    : '*';
+
+app.use(cors({
+    origin: frontendOrigins,
+}));
 app.use(express.json());
 
 app.use('/auth', authRoutes);

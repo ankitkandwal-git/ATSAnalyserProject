@@ -5,6 +5,8 @@ import axios from 'axios';
 import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 // import './index.css'
 
+const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
+
 const Register = () =>{
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,8 +31,14 @@ const Register = () =>{
   const handleSubmit = async (event) =>{
     event.preventDefault();
     if(!validateForm()) return;
+
+    if (!API_URL) {
+      setError('API URL is not configured. Set VITE_API_URL in frontend/.env.');
+      return;
+    }
+
     try{
-      const response = await axios.post('http://localhost:5000/auth/register',{
+      const response = await axios.post(`${API_URL}/auth/register`,{
         name,
         email,
         password
