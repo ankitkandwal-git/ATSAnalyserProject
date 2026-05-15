@@ -24,14 +24,9 @@ const Dashboard = () => {
     },
   ]);
 
-  // Analysis history state
   const [analysisHistory, setAnalysisHistory] = useState([]);
-
-  // Callback to update stats and history after analysis
   const handleResumeAnalyzed = (analysisData) => {
-    const { atsScore, improvements, fileName } = analysisData;
-    
-    // Update stats
+  const { atsScore, improvements, fileName } = analysisData;
     setStats(prevStats => {
       const updatedStats = [...prevStats];
       updatedStats[0].value = (updatedStats[0].value || 0) + 1;
@@ -39,8 +34,6 @@ const Dashboard = () => {
       updatedStats[2].value = (Array.isArray(improvements) ? improvements.length : 0);
       return updatedStats;
     });
-
-    // Add to history with timestamp
     const newAnalysis = {
       id: Date.now(),
       fileName: fileName || `Resume_${Date.now()}`,
@@ -73,8 +66,6 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
-
-          {/* Recent Analyses Section */}
           <section className="bg-[#181c2f] rounded-2xl p-8 shadow-xl border border-violet-500/10">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white flex items-center gap-2">

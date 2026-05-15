@@ -21,9 +21,7 @@ const AnalysisResults = ({ results, isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-6 space-y-6">
-          {/* ATS Score */}
           {analysis.atsScore && (
             <div className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 rounded-xl p-6 border border-violet-400/30">
               <div className="flex items-center justify-between mb-2">
@@ -44,8 +42,6 @@ const AnalysisResults = ({ results, isOpen, onClose }) => {
               </p>
             </div>
           )}
-
-          {/* Summary */}
           {analysis.summary && (
             <div className="bg-violet-500/5 rounded-xl p-6 border border-violet-400/20">
               <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
@@ -56,7 +52,6 @@ const AnalysisResults = ({ results, isOpen, onClose }) => {
             </div>
           )}
 
-          {/* Strengths */}
           {analysis.strengths && analysis.strengths.length > 0 && (
             <div className="bg-green-500/5 rounded-xl p-6 border border-green-400/20">
               <h3 className="text-lg font-semibold text-green-300 mb-3 flex items-center gap-2">
@@ -73,8 +68,6 @@ const AnalysisResults = ({ results, isOpen, onClose }) => {
               </ul>
             </div>
           )}
-
-          {/* Weaknesses */}
           {analysis.weaknesses && analysis.weaknesses.length > 0 && (
             <div className="bg-red-500/5 rounded-xl p-6 border border-red-400/20">
               <h3 className="text-lg font-semibold text-red-300 mb-3 flex items-center gap-2">
@@ -109,8 +102,6 @@ const AnalysisResults = ({ results, isOpen, onClose }) => {
               </ul>
             </div>
           )}
-
-          {/* Keywords */}
           {analysis.keywords && analysis.keywords.length > 0 && (
             <div className="bg-purple-500/5 rounded-xl p-6 border border-purple-400/20">
               <h3 className="text-lg font-semibold text-purple-300 mb-3">Key Skills Detected</h3>
@@ -127,8 +118,6 @@ const AnalysisResults = ({ results, isOpen, onClose }) => {
             </div>
           )}
         </div>
-
-        {/* Footer */}
         <div className="sticky bottom-0 flex gap-3 p-6 border-t border-violet-500/20 bg-[#050816]">
           <button
             onClick={onClose}
