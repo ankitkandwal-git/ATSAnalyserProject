@@ -8,13 +8,31 @@ import resumeRoutes from "./routes/resumeRoutes.js";
 dotenv.config();
 const app = express();
 
+const allowedOrigins = [
+  "https://ats-analyser-project.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
+  ...(process.env.FRONTEND_URL 
+    ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+    : [])
+];
+
 app.use(
   cors({
-    origin: "https://ats-analyser-project.vercel.app",
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+app.options("*", cors());
 
 
 app.use(express.json());
@@ -52,6 +70,11 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
+console.log("[startup] CORS Configuration:");
+console.log(`  Allowed origins: ${allowedOrigins.join(", ")}`);
+console.log(`  Frontend URL from env: ${process.env.FRONTEND_URL || "not set"}`);
+console.log(`[startup] Server starting on port ${PORT}`);
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`[startup] Server running on port ${PORT}`);
 });

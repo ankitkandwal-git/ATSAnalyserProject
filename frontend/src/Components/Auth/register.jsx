@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaEnvelope, FaLock } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaLock } from "react-icons/fa";
 
 const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
 
-const Login = () => {
+const Register = () => {
   const navigate = useNavigate();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
@@ -20,31 +22,44 @@ const Login = () => {
       return;
     }
 
-    try {
-      if (!email || !password) {
-        setError("Please fill in all fields");
-        return;
-      }
+    if (!name || !email || !password || !confirmPassword) {
+      setError("Please fill in all fields");
+      return;
+    }
 
-      const response = await fetch(`${API_URL}/auth/login`, {
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
         localStorage.setItem("token", data.token);
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
 
         navigate("/dashboard");
       } else {
-        setError(data.error || "Login failed. Please try again.");
+        setError(data.error || "Registration failed. Please try again.");
       }
     } catch (err) {
-      setError("Login failed. Please try again.");
+      setError("Registration failed. Please try again.");
       console.error(err);
     }
   };
@@ -53,14 +68,27 @@ const Login = () => {
     <div className="flex items-center justify-center min-h-screen bg-[#050816]">
       <div className="w-full max-w-md p-8 border shadow-2xl bg-white/10 rounded-2xl backdrop-blur-md border-white/20">
         <h2 className="mb-2 text-3xl font-bold text-center text-white">
-          Welcome Back
+          Create Account
         </h2>
 
         <p className="mb-6 text-center text-purple-300">
-          Login to ATS Analyzer
+          Join ATS Analyzer
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="relative">
+            <FaUser className="absolute text-purple-400 left-3 top-3" />
+
+            <input
+              type="text"
+              placeholder="Full Name"
+              className="w-full py-2 pl-10 pr-4 text-white placeholder-purple-200 border rounded-lg bg-white/20 border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+
           <div className="relative">
             <FaEnvelope className="absolute text-purple-400 left-3 top-3" />
 
@@ -87,6 +115,19 @@ const Login = () => {
             />
           </div>
 
+          <div className="relative">
+            <FaLock className="absolute text-purple-400 left-3 top-3" />
+
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              className="w-full py-2 pl-10 pr-4 text-white placeholder-purple-200 border rounded-lg bg-white/20 border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
+
           {error && (
             <div className="text-sm text-center text-red-400">
               {error}
@@ -97,17 +138,17 @@ const Login = () => {
             type="submit"
             className="w-full py-2 font-bold text-white transition rounded-lg shadow-lg bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
           >
-            Login
+            Register
           </button>
         </form>
 
         <p className="mt-4 text-center text-purple-200">
-          Don't have an account?{" "}
+          Already have an account?{" "}
           <Link
-            to="/register"
+            to="/login"
             className="text-blue-300 hover:underline"
           >
-            Register
+            Login
           </Link>
         </p>
       </div>
@@ -115,4 +156,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;
