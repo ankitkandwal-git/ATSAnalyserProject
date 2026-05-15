@@ -1,26 +1,17 @@
 import 'dotenv/config';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-    throw new Error(
-        "GEMINI_API_KEY is missing. Add it to Backend/.env and restart the server."
-    );
-}
-
-const genAI = new GoogleGenerativeAI(apiKey);
+const getApiKey = () => process.env.GEMINI_API_KEY?.trim();
 
 const MODEL_CANDIDATES = [
-    "gemini-1.5-flash",
-    // Versioned variants sometimes remain available even when the alias is not
-    "gemini-1.5-flash-001",
-    "gemini-1.5-flash-002",
-    "gemini-flash-latest",
-    "gemini-2.5-flash"
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-001',
+    'gemini-1.5-flash-002',
+    'gemini-flash-latest',
+    'gemini-2.5-flash'
 ];
 
 const buildPrompt = (resumeText, jobDescription) => {
-
     return `
 Analyze this resume for ATS optimization.
 
@@ -28,11 +19,11 @@ Resume:
 ${resumeText}
 
 Job Description:
-${jobDescription || "General ATS Analysis"}
+${jobDescription || 'General ATS Analysis'}
 
 Return ONLY valid JSON (no markdown, no code fences) with this exact shape:
 {
-  "atsScore": number,               // 0-100
+  "atsScore": number,
   "missingSkills": string[],
   "strengths": string[],
   "weaknesses": string[],
@@ -44,82 +35,173 @@ Return ONLY valid JSON (no markdown, no code fences) with this exact shape:
 
 const stripJsonFences = (text) => {
     if (!text) return text;
-    // Handles cases where the model still returns ```json ... ```
+
     return text
-        .replace(/^```json\s*/i, "")
-        .replace(/^```\s*/i, "")
-        .replace(/```\s*$/i, "")
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/```\s*$/i, '')
         .trim();
+};
+
+const normalizeStringArray = (value) =>
+    Array.isArray(value)
+        ? value.map((item) => String(item).trim()).filter(Boolean)
+        : [];
+
+const buildFallbackAnalysis = (summary = 'AI analysis is temporarily unavailable.') => ({
+    atsScore: 0,
+    missingSkills: [],
+    strengths: [],
+    weaknesses: ['The AI response could not be parsed safely.'],
+    improvements: [
+        'Try again with a cleaner PDF resume.',
+        'Verify the Gemini API key and model availability.'
+    ],
+    summary
+});
+
+const normalizeAnalysis = (parsed) => {
+    if (!parsed || typeof parsed !== 'object') {
+        return buildFallbackAnalysis();
+    }
+
+    const atsScore = Number(parsed.atsScore);
+
+    return {
+        atsScore: Number.isFinite(atsScore)
+            ? Math.max(0, Math.min(100, Math.round(atsScore)))
+            : 0,
+        missingSkills: normalizeStringArray(parsed.missingSkills),
+        strengths: normalizeStringArray(parsed.strengths),
+        weaknesses: normalizeStringArray(parsed.weaknesses),
+        improvements: normalizeStringArray(parsed.improvements),
+        summary: typeof parsed.summary === 'string' && parsed.summary.trim()
+            ? parsed.summary.trim()
+            : 'Analysis completed.'
+    };
+};
+
+const extractJsonObject = (text) => {
+    if (!text) {
+        return null;
+    }
+
+    const cleaned = stripJsonFences(text);
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+
+    if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+        return null;
+    }
+
+    const candidate = cleaned.slice(firstBrace, lastBrace + 1);
+
+    try {
+        return JSON.parse(candidate);
+    } catch {
+        return null;
+    }
+};
+
+const withTimeout = (promise, timeoutMs, label) => {
+    let timeoutId;
+
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+            const error = new Error(`${label} timed out after ${timeoutMs}ms`);
+            error.statusCode = 504;
+            reject(error);
+        }, timeoutMs);
+    });
+
+    return Promise.race([
+        promise.finally(() => clearTimeout(timeoutId)),
+        timeoutPromise
+    ]);
 };
 
 const isModelNotFoundError = (err) => {
     const message = String(err?.message || err);
-    return message.includes("[404 Not Found]") && message.includes("models/");
+    return message.includes('[404 Not Found]') && message.includes('models/');
 };
 
-const getModel = (modelName) =>
-    genAI.getGenerativeModel({
+const getModel = (modelName) => {
+    const apiKey = getApiKey();
+
+    if (!apiKey) {
+        const error = new Error('GEMINI_API_KEY is missing. Set it in your Render environment variables.');
+        error.statusCode = 500;
+        throw error;
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    return genAI.getGenerativeModel({
         model: modelName,
         generationConfig: {
             temperature: 0.2
         }
     });
+};
 
-export const analyzeResume = async (
-    resumeText,
-    jobDescription
-) => {
-
+export const analyzeResume = async (resumeText, jobDescription) => {
     try {
+        const cleanResumeText = String(resumeText || '').trim();
+        const cleanJobDescription = String(jobDescription || '').trim();
+
+        if (!cleanResumeText) {
+            const error = new Error('Resume text is required for analysis');
+            error.statusCode = 400;
+            throw error;
+        }
 
         const prompt = buildPrompt(
-            resumeText,
-            jobDescription
+            cleanResumeText.slice(0, 30000),
+            cleanJobDescription
         );
 
         let lastError;
 
         for (const modelName of MODEL_CANDIDATES) {
             try {
+                console.log(`[resume-analysis] AI request start model=${modelName} resumeTextLength=${cleanResumeText.length}`);
+
                 const model = getModel(modelName);
-                const result = await model.generateContent(prompt);
+                const result = await withTimeout(
+                    model.generateContent(prompt),
+                    90000,
+                    'Gemini generateContent'
+                );
                 const response = await result.response;
-                const text = response.text();
+                const text = typeof response?.text === 'function' ? response.text() : '';
 
-                const cleaned = stripJsonFences(text);
+                console.log(`[resume-analysis] AI response received model=${modelName} textLength=${text.length}`);
 
-                try {
-                    const parsed = JSON.parse(cleaned);
-                    return {
-                        model: modelName,
-                        rawText: text,
-                        parsed
-                    };
-                } catch {
-                    return {
-                        model: modelName,
-                        rawText: text,
-                        parsed: null
-                    };
-                }
+                const parsed = extractJsonObject(text);
+
+                return {
+                    model: modelName,
+                    rawText: text || '',
+                    parsed: parsed ? normalizeAnalysis(parsed) : buildFallbackAnalysis(),
+                    fallbackUsed: !parsed
+                };
             } catch (err) {
                 lastError = err;
+                console.error(`[resume-analysis] model failed model=${modelName}`, err);
+
                 if (isModelNotFoundError(err)) {
                     continue;
                 }
+
                 throw err;
             }
         }
 
-        throw lastError || new Error("Gemini request failed");
-
+        const finalError = lastError || new Error('Gemini request failed');
+        finalError.statusCode = finalError.statusCode || 502;
+        throw finalError;
     } catch (err) {
-
-        console.error(
-            "analyzeResume error:",
-            err
-        );
-
+        console.error('analyzeResume error:', err);
         throw err;
     }
 };
