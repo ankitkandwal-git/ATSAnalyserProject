@@ -26,6 +26,17 @@ const cleanupUploadedFile = async (filePath) => {
 
 export const uploadResume = async (req, res) => {
     console.log('[resume-upload] ===== START UPLOAD =====');
+    let savedResume = null;
+    let uploadedFileCleaned = false;
+
+    const cleanupRequestFile = async () => {
+        if (uploadedFileCleaned) {
+            return;
+        }
+
+        uploadedFileCleaned = true;
+        await cleanupUploadedFile(req.file?.path);
+    };
 
     try {
         // Validate file exists
@@ -48,7 +59,7 @@ export const uploadResume = async (req, res) => {
         // Validate file type
         if (req.file.mimetype !== 'application/pdf') {
             console.warn('[resume-upload] Invalid file type:', req.file.mimetype);
-            await cleanupUploadedFile(req.file.path);
+            await cleanupRequestFile();
             return res.status(400).json({
                 success: false,
                 error: 'Only PDF files are supported. Received: ' + req.file.mimetype
@@ -58,7 +69,7 @@ export const uploadResume = async (req, res) => {
         // Validate file size
         if (req.file.size === 0) {
             console.warn('[resume-upload] File is empty');
-            await cleanupUploadedFile(req.file.path);
+            await cleanupRequestFile();
             return res.status(400).json({
                 success: false,
                 error: 'Uploaded file is empty'
@@ -72,7 +83,7 @@ export const uploadResume = async (req, res) => {
             extractedText = await extractTextFromPDF(req.file.path);
         } catch (parseError) {
             console.error('[resume-upload] PDF parsing failed:', parseError);
-            await cleanupUploadedFile(req.file.path);
+            await cleanupRequestFile();
             return res.status(422).json({
                 success: false,
                 error: 'Failed to parse PDF: ' + (parseError.message || 'Unknown error')
@@ -82,7 +93,7 @@ export const uploadResume = async (req, res) => {
         // Validate extracted text
         if (!extractedText || !extractedText.trim()) {
             console.warn('[resume-upload] No text extracted from PDF');
-            await cleanupUploadedFile(req.file.path);
+            await cleanupRequestFile();
             return res.status(422).json({
                 success: false,
                 error: 'PDF file did not contain any readable text. Try a different resume file.'
@@ -93,46 +104,56 @@ export const uploadResume = async (req, res) => {
 
         // Save resume metadata to database
         try {
-            const resume = new Resume({
+            const newResume = new Resume({
                 userId: null,
                 filename: req.file.originalname,
                 path: req.file.path
             });
 
-            await resume.save();
-            console.log('[resume-upload] Resume saved to DB with ID:', resume._id);
+            savedResume = await newResume.save();
+            console.log('[resume-upload] Resume saved to DB with ID:', savedResume._id);
         } catch (dbError) {
             console.error('[resume-upload] Database save failed:', dbError.message);
-            await cleanupUploadedFile(req.file.path);
+            await cleanupRequestFile();
             return res.status(500).json({
                 success: false,
                 error: 'Failed to save resume to database'
             });
         }
 
+        if (!savedResume?._id) {
+            const saveError = new Error('Resume was not saved correctly');
+            saveError.statusCode = 500;
+            throw saveError;
+        }
+
         console.log('[resume-upload] ===== END UPLOAD (SUCCESS) =====');
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: 'Resume uploaded and parsed successfully',
             extractedText,
-            resumeId: resume._id,
+            resumeId: savedResume._id,
             fileName: req.file.originalname
         });
 
     } catch (error) {
         console.error('[resume-upload] Unexpected error:', error);
-        await cleanupUploadedFile(req.file?.path);
+        await cleanupRequestFile();
+
+        if (res.headersSent) {
+            return;
+        }
 
         const statusCode = error?.statusCode || 500;
-        res.status(statusCode).json({
+        return res.status(statusCode).json({
             success: false,
             error: error?.message || 'Failed to upload resume',
             ...(process.env.NODE_ENV !== 'production' ? { stack: error?.stack } : {})
         });
     } finally {
         // Cleanup uploaded file after processing
-        await cleanupUploadedFile(req.file?.path);
+        await cleanupRequestFile();
     }
 };
 
