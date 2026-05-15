@@ -3,8 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
-import authRoutes from "./routes/authRoutes.js";
-import resumeRoutes from "./routes/resumeRoutes.js";
+import authRoutes from "./src/routes/authRoutes.js";
+import resumeRoutes from "./src/routes/resumeRoutes.js";
 dotenv.config();
 const app = express();
 
@@ -31,9 +31,6 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
-app.options("*", cors());
-
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
