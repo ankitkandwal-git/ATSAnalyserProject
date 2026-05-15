@@ -1,60 +1,57 @@
-import express from 'express';
-import cors from 'cors';
-import 'dotenv/config';
-import connectDB from './src/config/db.js';
-import authRoutes from './src/routes/authRoutes.js';
-import resumeRoutes from './src/routes/resumeRoutes.js';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
 
-connectDB();
-
+import authRoutes from "./routes/authRoutes.js";
+import resumeRoutes from "./routes/resumeRoutes.js";
+dotenv.config();
 const app = express();
 
-const frontendOrigins = process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(',').map((origin) => origin.trim().replace(/\/$/, '')).filter(Boolean)
-    : '*';
+app.use(
+  cors({
+    origin: "https://ats-analyser-project.vercel.app",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
 
-app.use(cors({
-    origin: frontendOrigins,
-}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-    if (req.originalUrl.startsWith('/api/resumes')) {
-        console.log(`[request] ${req.method} ${req.originalUrl}`);
-    }
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("MongoDB Connected Successfully");
+  })
+  .catch((error) => {
+    console.error("MongoDB Connection Error:", error);
+  });
 
-    next();
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "ATS Resume Analyzer Backend Running",
+  });
 });
 
-app.use('/auth', authRoutes);
-app.use('/api/resumes', resumeRoutes);
 
-app.get('/', (req, res) => {
-    res.send('Welcome to ATS Analyzer API');
-});
-const PORT = process.env.PORT || 5000;
+app.use("/auth", authRoutes);
+app.use("/api/resumes", resumeRoutes);
 
 app.use((err, req, res, next) => {
-    console.error('[server] unhandled error:', err);
+  console.error("Server Error:", err);
 
-    const status = err?.name === 'MulterError'
-        ? 400
-        : err?.statusCode || 500;
-
-    res.status(status).json({
-        success: false,
-        error: err?.message || 'Internal Server Error'
-    });
+  res.status(500).json({
+    success: false,
+    error: "Internal Server Error",
+  });
 });
 
-console.log('[startup] environment check', {
-    port: PORT,
-    hasMongoUri: Boolean(process.env.MONGO_URI || process.env.MONGO_URL),
-    hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
-    frontendUrl: process.env.FRONTEND_URL || '*'
-});
 
-app.listen(PORT,() =>{
-    console.log(`Server is running on port ${PORT}`);
-})
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
