@@ -11,7 +11,6 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// Use ONLY stable supported model
 const MODEL_NAME = "gemini-2.5-flash";
 
 const buildPrompt = (resumeText, jobDescription) => {

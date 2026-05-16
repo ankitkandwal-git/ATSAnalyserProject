@@ -2,15 +2,11 @@ import { extractTextFromPDF } from "../utils/resumeParser.js";
 import Resume from "../models/resume.js";
 import { analyzeResume } from "../utils/aiAnalyser.js";
 
-// ============================================================================
-// File Cleanup Utility
-// ============================================================================
 
 const cleanupUploadedFile = async (filePath) => {
     if (!filePath) {
         return;
     }
-
     try {
         const { unlink } = await import('fs/promises');
         await unlink(filePath);
@@ -20,9 +16,6 @@ const cleanupUploadedFile = async (filePath) => {
     }
 };
 
-// ============================================================================
-// Upload Handler
-// ============================================================================
 
 export const uploadResume = async (req, res) => {
     console.log('[resume-upload] ===== START UPLOAD =====');
@@ -156,10 +149,6 @@ export const uploadResume = async (req, res) => {
         await cleanupRequestFile();
     }
 };
-
-// ============================================================================
-// Analysis Handler
-// ============================================================================
 
 export const analyzeResumeController = async (req, res) => {
     const startTime = Date.now();
