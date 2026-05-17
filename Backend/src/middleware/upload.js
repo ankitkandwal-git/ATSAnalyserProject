@@ -1,14 +1,19 @@
 import multer from 'multer';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
-import cloudinary from '../config/cloudinary.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const storage = new CloudinaryStorage({
-    cloudinary,
-    params: async (req, file) => ({
-        folder: 'resumes',
-        resource_type: 'raw',
-        public_id: `${Date.now()}-${file.originalname}`,
-    }),
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const tempDir = path.join(__dirname, '../../uploads/temp');
+        cb(null, tempDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = `${Date.now()}-${file.originalname}`;
+        cb(null, uniqueSuffix);
+    },
 });
 
 const allowedFormats = new Set([

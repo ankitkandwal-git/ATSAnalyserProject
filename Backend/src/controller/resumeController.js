@@ -1,7 +1,12 @@
 import { extractTextFromPDF } from "../utils/resumeParser.js";
 import Resume from "../models/resume.js";
 import { analyzeResume } from "../utils/aiAnalyser.js";
+import cloudinary from "../config/cloudinary.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const cleanupUploadedFile = async (filePath) => {
     if (!filePath) {
@@ -15,7 +20,6 @@ const cleanupUploadedFile = async (filePath) => {
         console.warn(`[resume-controller] Failed to cleanup file ${filePath}:`, error.message);
     }
 };
-
 
 export const uploadResume = async (req, res) => {
     console.log('[resume-upload] ===== START UPLOAD =====');
@@ -70,7 +74,6 @@ export const uploadResume = async (req, res) => {
         }
 
         // Extract text from PDF
-        // Extract text from PDF
         console.log('[resume-upload] Extracting text from PDF...');
         let extractedText;
         try {
@@ -96,58 +99,59 @@ export const uploadResume = async (req, res) => {
 
         console.log('[resume-upload] Text extracted, length:', extractedText.length);
 
-        // Save resume metadata to database
+        // Upload to Cloudinary
+        console.log('[resume-upload] Uploading file to Cloudinary...');
+        let cloudinaryResult;
         try {
-            const newResume = new Resume({
-                 userId: null,
-                filename: req.file.originalname,
-                 resumeUrl: req.file.path
+            cloudinaryResult = await cloudinary.uploader.upload(req.file.path, {
+                folder: 'resumes',
+                resource_type: 'raw',
+                public_id: `${Date.now()}-${req.file.originalname}`,
             });
-
-            savedResume = await newResume.save();
-            console.log('[resume-upload] Resume saved to DB with ID:', savedResume._id);
-        } catch (dbError) {
-            console.error('[resume-upload] Database save failed:', dbError.message);
+        } catch (uploadError) {
+            console.error('[resume-upload] Cloudinary upload failed:', uploadError);
             await cleanupRequestFile();
             return res.status(500).json({
                 success: false,
-                error: 'Failed to save resume to database'
+                error: 'Failed to upload file to Cloudinary: ' + (uploadError.message || 'Unknown error')
             });
         }
 
-        if (!savedResume?._id) {
-            const saveError = new Error('Resume was not saved correctly');
-            saveError.statusCode = 500;
-            throw saveError;
+        console.log('[resume-upload] File uploaded to Cloudinary:', cloudinaryResult.secure_url);
+
+        // Save resume metadata to database
+        try {
+            savedResume = await Resume.create({
+                userId: req.user.id,
+                fileUrl: cloudinaryResult.secure_url,
+                extractedText,
+            });
+        } catch (dbError) {
+            console.error('[resume-upload] Failed to save resume to database:', dbError);
+            await cleanupRequestFile();
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to save resume to database: ' + (dbError.message || 'Unknown error')
+            });
         }
 
-        console.log('[resume-upload] ===== END UPLOAD (SUCCESS) =====');
+        console.log('[resume-upload] Resume saved to database:', savedResume);
 
-        return res.status(200).json({
+        // Cleanup local file
+        await cleanupRequestFile();
+
+        return res.status(201).json({
             success: true,
-            message: 'Resume uploaded and parsed successfully',
-            extractedText,
-            resumeId: savedResume._id,
-            fileName: req.file.originalname
+            message: 'Resume uploaded and processed successfully',
+            data: savedResume,
         });
-
     } catch (error) {
         console.error('[resume-upload] Unexpected error:', error);
         await cleanupRequestFile();
-
-        if (res.headersSent) {
-            return;
-        }
-
-        const statusCode = error?.statusCode || 500;
-        return res.status(statusCode).json({
+        return res.status(500).json({
             success: false,
-            error: error?.message || 'Failed to upload resume',
-            ...(process.env.NODE_ENV !== 'production' ? { stack: error?.stack } : {})
+            error: 'An unexpected error occurred: ' + (error.message || 'Unknown error')
         });
-    } finally {
-        // Cleanup uploaded file after processing
-        await cleanupRequestFile();
     }
 };
 
