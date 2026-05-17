@@ -1,46 +1,34 @@
 import multer from 'multer';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
+import {CloudinaryStorage} from 'multer-storage-cloudinary';
+import cloudinary from '../config/cloudinary.js';
 
-const uploadDirectory = path.join(os.tmpdir(), 'ats-analyzer-uploads');
-
-fs.mkdirSync(uploadDirectory, { recursive: true });
-
-const storage = multer.diskStorage({
-    destination: function(req, file, cb) {
-        cb(null, uploadDirectory);
-    },
-    filename: function(req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-
-        cb(
-            null,
-            file.fieldname +
-            '-' +
-            uniqueSuffix +
-            path.extname(file.originalname)
-        );
-    }
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: async(req,file) =>({
+        folder: "resume",
+        folder_name = "raw",
+        public_id:
+        `${Date.now()}-${file.originalname}`,
+    })
 });
 
-const allowedMimeTypes = new Set(['application/pdf']);
+const allowedFormats = new Set(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
 
-const fileFilter = (req, file, cb) => {
-    if (allowedMimeTypes.has(file.mimetype)) {
-        cb(null, true);
+const filter = (req,file,cb) =>{
+    if(allowedFormats.has(file.mimetype)){
+        cb(null,true);
         return;
     }
-
-    cb(new Error('Unsupported file type. Please upload a PDF resume.'), false);
+    cb(
+        new Error('Unsupported file format. Only PDF and Word documents are allowed.'),
+        false
+    )
 };
 
 const upload = multer({
     storage,
     fileFilter,
-    limits: {
-        fileSize: 10 * 1024 * 1024
-    }
+    limits: {fileSize: 5 * 1024 * 1024}
 });
 
 export default upload;

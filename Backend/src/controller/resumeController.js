@@ -98,9 +98,9 @@ export const uploadResume = async (req, res) => {
         // Save resume metadata to database
         try {
             const newResume = new Resume({
-                userId: null,
+                 userId: null,
                 filename: req.file.originalname,
-                path: req.file.path
+                 resumeUrl: req.file.path
             });
 
             savedResume = await newResume.save();
