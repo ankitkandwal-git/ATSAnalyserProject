@@ -1,32 +1,28 @@
-import multer from 'multer';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs/promises';
+import multer from "multer";
+import fs from "fs";
+import path from "path";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const uploadPath = path.join(process.cwd(), "uploads/temp");
+
+fs.mkdirSync(uploadPath, { recursive: true });
 
 const storage = multer.diskStorage({
-    destination: async (req, file, cb) => {
-        try {
-            const tempDir = path.join(__dirname, '../../uploads/temp');
-            await fs.mkdir(tempDir, { recursive: true });
-            cb(null, tempDir);
-        } catch (error) {
-            console.error('[upload-middleware] Failed to create temp directory:', error);
-            cb(error);
-        }
+    destination: (req, file, cb) => {
+        cb(null, uploadPath);
     },
+
     filename: (req, file, cb) => {
-        const uniqueSuffix = `${Date.now()}-${file.originalname}`;
-        cb(null, uniqueSuffix);
+        const uniqueName =
+            Date.now() + "-" + file.originalname.replace(/\s+/g, "");
+
+        cb(null, uniqueName);
     },
 });
 
 const allowedFormats = new Set([
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
 
 const fileFilter = (req, file, cb) => {
@@ -37,7 +33,7 @@ const fileFilter = (req, file, cb) => {
 
     cb(
         new Error(
-            'Unsupported file format. Only PDF and Word documents are allowed.'
+            "Unsupported file format. Only PDF and Word documents are allowed."
         ),
         false
     );
