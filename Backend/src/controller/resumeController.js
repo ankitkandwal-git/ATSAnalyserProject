@@ -42,9 +42,9 @@ export const uploadResume = async (req, res) => {
 
         // Extract text from PDF
         console.log("[resume-upload] Extracting PDF text...");
-
+        console.log("FILE PATH:", req.file.path);
         const extractedText = await extractTextFromPDF(req.file.path);
-
+        console.log("EXTRACTED TEXT:", extractedText);
         // Validate extracted text
         if (!extractedText || !extractedText.trim()) {
 
