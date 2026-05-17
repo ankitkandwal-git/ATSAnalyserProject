@@ -9,16 +9,23 @@ export const analyseService = {
         throw new Error('API URL is not configured. Set VITE_API_URL in frontend/.env.');
       }
 
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found. Please log in first.');
+      }
+
       const formData = new FormData();
       formData.append('resume', file);
 
       const uploadResponse = await axios.post(`${API_URL}/api/resumes/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Authorization': token,
         },
       });
 
-      const extractedText = uploadResponse.data.extractedText;
+      const extractedText = uploadResponse.data.data?.extractedText;
 
       const analyzeResponse = await axios.post(`${API_URL}/api/resumes/analyze`, {
         resumeText: extractedText,

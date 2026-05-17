@@ -1,14 +1,21 @@
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs/promises';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const tempDir = path.join(__dirname, '../../uploads/temp');
-        cb(null, tempDir);
+    destination: async (req, file, cb) => {
+        try {
+            const tempDir = path.join(__dirname, '../../uploads/temp');
+            await fs.mkdir(tempDir, { recursive: true });
+            cb(null, tempDir);
+        } catch (error) {
+            console.error('[upload-middleware] Failed to create temp directory:', error);
+            cb(error);
+        }
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = `${Date.now()}-${file.originalname}`;

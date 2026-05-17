@@ -36,6 +36,15 @@ export const uploadResume = async (req, res) => {
     };
 
     try {
+        // Validate user authentication
+        if (!req.user || !req.user.id) {
+            console.warn('[resume-upload] User not authenticated');
+            return res.status(401).json({
+                success: false,
+                error: 'User not authenticated. Please log in first.'
+            });
+        }
+
         // Validate file exists
         if (!req.file) {
             console.warn('[resume-upload] No file provided');

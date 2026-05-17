@@ -5,7 +5,17 @@ import mongoose from "mongoose";
 
 import authRoutes from "./src/routes/authRoutes.js";
 import resumeRoutes from "./src/routes/resumeRoutes.js";
+import cloudinary from "./src/config/cloudinary.js";
+
 dotenv.config();
+
+// Verify Cloudinary configuration
+console.log('[server] Cloudinary Config Status:', {
+  cloud_name: process.env.CLOUD_NAME ? '✓ SET' : '✗ MISSING',
+  api_key: process.env.CLOUD_API_KEY ? '✓ SET' : '✗ MISSING',
+  api_secret: process.env.CLOUD_API_SECRET ? '✓ SET' : '✗ MISSING',
+});
+
 const app = express();
 
 const allowedOrigins = [
