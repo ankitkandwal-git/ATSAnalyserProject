@@ -70,18 +70,19 @@ export const uploadResume = async (req, res) => {
         }
 
         // Extract text from PDF
-        console.log('[resume-upload] Extracting text from PDF...');
-        let extractedText;
-        try {
-            extractedText = await extractTextFromPDF(req.file.path);
-        } catch (parseError) {
-            console.error('[resume-upload] PDF parsing failed:', parseError);
-            await cleanupRequestFile();
-            return res.status(422).json({
-                success: false,
-                error: 'Failed to parse PDF: ' + (parseError.message || 'Unknown error')
-            });
-        }
+        // Extract text from PDF
+console.log('[resume-upload] Extracting text from PDF...');
+let extractedText;
+try {
+    extractedText = await extractTextFromPDF(req.file.path);
+} catch (parseError) {
+    console.error('[resume-upload] PDF parsing failed:', parseError);
+    await cleanupRequestFile();
+    return res.status(422).json({
+        success: false,
+        error: 'Failed to parse PDF: ' + (parseError.message || 'Unknown error')
+    });
+}
 
         // Validate extracted text
         if (!extractedText || !extractedText.trim()) {
