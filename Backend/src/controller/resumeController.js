@@ -76,3 +76,8 @@ export const uploadResume = async (req, res) => {
         });
     }
 };
+
+export {
+    uploadResume,
+    analyzeResumeController
+};
