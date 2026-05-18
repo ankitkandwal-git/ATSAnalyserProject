@@ -1,87 +1,107 @@
 # 🚀 ATS Analyzer
 
-AI-powered Resume Screening & Analysis Platform
+**ATS Analyzer** is a polished, industry-ready resume screening platform that combines modern UI with AI-powered resume analysis and ATS compatibility scoring.
 
 ![ATS Analyzer Banner](https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80)
 
 ---
 
-## ✨ Features
+## 🔍 What It Does
 
-- **Smart Resume Upload:** Upload your PDF resume and get instant feedback
-- **AI Analysis:** Gemini-powered resume parsing, ATS scoring, and improvement suggestions
-- **Real-Time Dashboard:** See your stats, history, and suggestions update live
-- **Modern UI:** Beautiful, responsive design with Tailwind CSS
-- **Secure Auth:** Register/Login with JWT authentication
-- **History Tracking:** View your last 10 analyses with scores and suggestions
+ATS Analyzer helps job seekers and recruiting teams evaluate resumes against applicant tracking system (ATS) expectations.
+
+- Upload a resume and receive an instant technical assessment
+- Analyze resume structure, keyword fit, and formatting
+- Generate actionable improvement suggestions
+- Track recent resume checks with score history
+- Protect access with secure authentication
 
 ---
 
-## 🖥️ Tech Stack
+## ✨ Key Features
+
+- **Resume Parsing & Analysis** — Extract resume sections and assess compatibility with ATS heuristics
+- **AI Suggestions** — Receive targeted recommendations for wording, structure, and keywords
+- **Interactive Dashboard** — Monitor score trends, score breakdowns, and prior analysis history
+- **Secure Authentication** — Register and log in securely with JWT-based authentication
+- **Responsive UI** — Built for desktop and mobile with a clean Tailwind-powered design
+
+---
+
+## 🛠️ Technology Stack
 
 - **Frontend:** React, Vite, Tailwind CSS
 - **Backend:** Node.js, Express
-- **AI Service:** Gemini API (Google)
-- **State:** React Hooks
-- **Database:** (Pluggable, e.g. MongoDB/SQL for production)
+- **AI Integration:** Gemini API-compatible processing
+- **Database:** SQLite-ready / pluggable for production upgrades
+- **Authentication:** JWT session handling
 
 ---
 
-## 🚦 Quick Start
+## 🚀 Quick Start
 
-### 1. Clone the Repo
+### Clone the repository
 ```bash
 git clone https://github.com/your-username/ats-analyzer.git
-cd ats-analyzer
+cd ATSAnalyzer
 ```
 
-### 2. Install Dependencies
+### Install dependencies
 ```bash
-cd frontend && npm install
-cd ../Backend && npm install
+cd frontend
+npm install
 ```
-
-### 3. Start the App
 ```bash
-# In one terminal
-cd Backend && npm start
-# In another terminal
-cd ../frontend && npm run dev
+cd ../Backend
+npm install
 ```
 
-### 4. Open in Browser
-Visit: [http://localhost:5173](http://localhost:5173)
+### Run the application
+```bash
+cd Backend
+npm start
+```
+```bash
+cd ../frontend
+npm run dev
+```
+
+### Access in browser
+Open: [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## 📸 Screenshots
+## 📁 Project Structure
 
-![Dashboard Screenshot](https://cdn.pixabay.com/photo/2017/01/10/19/05/analytics-1972443_1280.png)
-
----
-
-## 📝 Folder Structure
-
-```
+```text
 ATSAnalyzer/
-├── Backend/         # Express server, AI logic, routes
-├── frontend/        # React app (Vite + Tailwind)
-└── readme.md        # This file
+├── Backend/          # API server, resume parser, authentication routes
+├── frontend/         # React + Vite user interface
+└── readme.md         # Project overview and setup guide
 ```
 
 ---
 
-## 💡 Credits
-- UI inspired by modern SaaS dashboards
-- AI powered by Google Gemini
-- Built with ❤️ by Ritesh
+## ✅ Why This Project
+
+- Ideal for early-stage HR tech prototypes and resume optimization tools
+- Provides a strong foundation for ATS-aware career platforms
+- Easily extendable for enterprise analytics, multi-tenant usage, or SaaS deployment
 
 ---
 
-## 📬 Feedback & Contributions
-Pull requests and issues are welcome!
+## 💡 Contribution Guide
+
+Contributions are welcome. Feel free to:
+- Open issues for bugs or enhancement ideas
+- Submit pull requests with improvements
+- Add test coverage for new functionality
+- Improve documentation and onboarding flow
 
 ---
 
-> "Land your dream job with a smarter resume."
+## 📬 Contact
+For any questions or collaboration, open an issue or submit a PR.
+
+> Build smarter resumes with data-driven insights.
 
