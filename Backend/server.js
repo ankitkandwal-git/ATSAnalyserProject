@@ -9,7 +9,6 @@ import cloudinary from "./src/config/cloudinary.js";
 
 dotenv.config();
 
-// Verify Cloudinary configuration
 console.log('[server] Cloudinary Config Status:', {
   cloud_name: process.env.CLOUD_NAME ? '✓ SET' : '✗ MISSING',
   api_key: process.env.CLOUD_API_KEY ? '✓ SET' : '✗ MISSING',
@@ -35,8 +34,6 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
-
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

@@ -5,7 +5,6 @@ import Sidebar from "./Sidebar";
 import { FaFilePdf, FaChartLine, FaLightbulb, FaCheckCircle, FaExclamationCircle, FaClock } from "react-icons/fa";
 
 const Dashboard = () => {
-  // Stats state
   const [stats, setStats] = useState([
     {
       icon: <FaFilePdf className="text-3xl text-violet-500" />,
@@ -52,7 +51,6 @@ const Dashboard = () => {
         <Header onResumeAnalyzed={handleResumeAnalyzed} />
         <main className="flex-1 p-6 md:p-10 overflow-y-auto">
           <h1 className="mb-6 text-3xl font-bold text-white">Welcome to your Dashboard</h1>
-          
           {/* Stats Cards */}
           <div className="grid grid-cols-1 gap-6 mb-10 sm:grid-cols-2 lg:grid-cols-3">
             {stats.map((stat, idx) => (

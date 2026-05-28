@@ -9,7 +9,6 @@ export const analyseService = {
         throw new Error('API URL is not configured. Set VITE_API_URL in frontend/.env.');
       }
 
-      // Get token from localStorage
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('Authentication token not found. Please log in first.');

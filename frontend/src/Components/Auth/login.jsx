@@ -59,7 +59,6 @@ const Login = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-[#050816]">
       <div className="w-full max-w-md p-8 border shadow-2xl bg-white/10 rounded-2xl backdrop-blur-md border-white/20">
-        
         <h2 className="mb-2 text-3xl font-bold text-center text-white">
           Welcome Back
         </h2>
@@ -69,10 +68,8 @@ const Login = () => {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-
           <div className="relative">
             <FaEnvelope className="absolute text-purple-400 left-3 top-3" />
-
             <input
               type="email"
               placeholder="Email"
@@ -85,7 +82,6 @@ const Login = () => {
 
           <div className="relative">
             <FaLock className="absolute text-purple-400 left-3 top-3" />
-
             <input
               type="password"
               placeholder="Password"

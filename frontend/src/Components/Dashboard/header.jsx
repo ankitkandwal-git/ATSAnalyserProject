@@ -34,7 +34,6 @@ const Header = ({ onResumeAnalyzed }) => {
                 const atsScore = result?.analysis?.atsScore;
                 const improvements = result?.analysis?.improvements;
 
-                // Store results and show modal
                 setAnalysisResults(result);
                 setShowResults(true);
 

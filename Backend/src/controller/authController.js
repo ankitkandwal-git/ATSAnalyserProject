@@ -5,28 +5,23 @@ import jwt from 'jsonwebtoken';
 export const register = async(req,res) =>{
     const {name,email,password} = req.body;
     try{
-        // Validate input
         if(!name || !email || !password){
             return res.status(400).json({error: 'All fields are required'});
         }
         
-        // Check if user already exists
         const existingUser = await User.findOne({email});
         if(existingUser){
             return res.status(409).json({error: 'Email already registered'});
         }
         
-        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
         
-        // Create new user
         const newUser = await User.create({
             name,
             email,
             password: hashedPassword
         });
         
-        // Generate token
         const token = jwt.sign({userId: newUser._id}, process.env.JWT_SECRET || 'secret_key');
         
         res.status(201).json({
@@ -43,24 +38,20 @@ export const register = async(req,res) =>{
 export const login = async(req,res) =>{
     const {email,password} = req.body;
     try{
-        // Validate input
         if(!email || !password){
             return res.status(400).json({error: 'Email and password are required'});
         }
         
-        // Find user by email
         const user = await User.findOne({email});
         if(!user){
             return res.status(401).json({error: 'Invalid email or password'});
         }
         
-        // Compare password
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if(!isPasswordValid){
             return res.status(401).json({error: 'Invalid email or password'});
         }
         
-        // Generate token
         const token = jwt.sign({userId: user._id}, process.env.JWT_SECRET || 'secret_key');
         
         res.status(200).json({

@@ -3,19 +3,11 @@ import { extractTextFromPDF } from "../utils/resumeParser.js";
 import Resume from "../models/resume.js";
 import { analyzeResume } from "../utils/aiAnalyser.js";
 
-/*
-========================================
-UPLOAD RESUME CONTROLLER
-========================================
-*/
-
 export const uploadResume = async (req, res) => {
 
     console.log("[resume-upload] ===== START UPLOAD =====");
 
     try {
-
-        // Validate file exists
         if (!req.file) {
 
             console.warn("[resume-upload] No file uploaded");
@@ -26,7 +18,6 @@ export const uploadResume = async (req, res) => {
             });
         }
 
-        // Log file details
         console.log("[resume-upload] File received:", {
             originalname: req.file.originalname,
             mimetype: req.file.mimetype,
@@ -34,18 +25,15 @@ export const uploadResume = async (req, res) => {
             path: req.file.path,
         });
 
-        // Check file exists
         console.log(
             "[resume-upload] FILE EXISTS:",
             fs.existsSync(req.file.path)
         );
 
-        // Extract text from PDF
         console.log("[resume-upload] Extracting PDF text...");
         console.log("FILE PATH:", req.file.path);
         const extractedText = await extractTextFromPDF(req.file.path);
         console.log("EXTRACTED TEXT:", extractedText);
-        // Validate extracted text
         if (!extractedText || !extractedText.trim()) {
 
             console.warn("[resume-upload] No readable text found");
@@ -60,7 +48,6 @@ export const uploadResume = async (req, res) => {
             "[resume-upload] Text extracted successfully"
         );
 
-        // Save to DB
         const newResume = new Resume({
             userId: null,
             filename: req.file.originalname,
@@ -92,12 +79,6 @@ export const uploadResume = async (req, res) => {
     }
 };
 
-/*
-========================================
-ANALYZE RESUME CONTROLLER
-========================================
-*/
-
 export const analyzeResumeController = async (req, res) => {
 
     const startTime = Date.now();
@@ -107,10 +88,8 @@ export const analyzeResumeController = async (req, res) => {
     );
 
     try {
-
         const { resumeText, jobDescription } = req.body || {};
 
-        // Validate inputs
         if (!resumeText || !resumeText.trim()) {
 
             return res.status(400).json({
@@ -119,7 +98,7 @@ export const analyzeResumeController = async (req, res) => {
             });
         }
 
-        // AI analysis
+
         const analysisResult = await analyzeResume(
             resumeText,
             jobDescription
