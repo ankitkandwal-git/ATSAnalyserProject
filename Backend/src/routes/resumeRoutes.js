@@ -18,6 +18,10 @@ router.post(
 
 router.post(
     '/analyze',
+    (req, res, next) => {
+        console.log('[resume-route] POST /api/resumes/analyze hit');
+        next();
+    },
     analyzeResumeController
 );
 

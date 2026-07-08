@@ -2,9 +2,10 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-
+import redisClient from "./src/config/redis.js";
 import authRoutes from "./src/routes/authRoutes.js";
 import resumeRoutes from "./src/routes/resumeRoutes.js";
+import redisRoutes from "./src/routes/redis.js";
 import cloudinary from "./src/config/cloudinary.js";
 
 dotenv.config();
@@ -38,6 +39,11 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use((req, res, next) => {
+  console.log(`[http] ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
@@ -57,7 +63,7 @@ app.get("/", (req, res) => {
 
 app.use("/auth", authRoutes);
 app.use("/api/resumes", resumeRoutes);
-
+app.use("/api/redis", redisRoutes);
 app.use((err, req, res, next) => {
   console.error("Server Error:", err);
 

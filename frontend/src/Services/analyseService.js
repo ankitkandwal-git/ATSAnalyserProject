@@ -24,7 +24,7 @@ export const analyseService = {
         },
       });
 
-      const extractedText = uploadResponse.data.data?.extractedText;
+      const extractedText = uploadResponse.data?.extractedText;
 
       const analyzeResponse = await axios.post(`${API_URL}/api/resumes/analyze`, {
         resumeText: extractedText,
