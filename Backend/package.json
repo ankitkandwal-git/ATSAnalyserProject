@@ -20,12 +20,14 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.2",
     "multer": "^2.1.1",
     "multer-storage-cloudinary": "^4.0.0",
     "nodemon": "^3.1.14",
     "pdfjs-dist": "^5.7.284",
+    "rate-limit-redis": "^5.0.0",
     "redis": "^6.1.0"
   }
 }

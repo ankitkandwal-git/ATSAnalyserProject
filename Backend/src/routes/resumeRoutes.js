@@ -1,6 +1,7 @@
 import express from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
 import upload from '../middleware/upload.js';
+import { analyzeRateLimiter } from '../middleware/rateLimit.js';
 
 import {
     uploadResume,
@@ -18,6 +19,7 @@ router.post(
 
 router.post(
     '/analyze',
+    analyzeRateLimiter,
     (req, res, next) => {
         console.log('[resume-route] POST /api/resumes/analyze hit');
         next();
