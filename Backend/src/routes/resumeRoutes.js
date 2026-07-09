@@ -6,7 +6,8 @@ import { testQueueController } from '../controller/queueController.js';
 import {
     uploadResume,
     analyzeResumeController,
-    getResumeJobStatus
+    getResumeJobStatus,
+    getResumeHistory
 } from '../controller/resumeController.js';
 
 const router = express.Router();
@@ -31,4 +32,5 @@ router.post(
 router.post('/queue-test', testQueueController);
 
 router.get('/jobs/:jobId', getResumeJobStatus);
+router.get('/history', getResumeHistory);
 export default router;

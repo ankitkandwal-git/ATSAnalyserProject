@@ -47,7 +47,7 @@ const Header = ({ onResumeAnalyzed }) => {
 
                 if (jobStatus?.state === 'completed') {
                     stopPolling();
-                    setAnalysisResults({ analysis: jobStatus.result });
+                    setAnalysisResults({ analysis: jobStatus.result.analysis });
                     setShowResults(true);
 
                     const analysis = jobStatus.result?.analysis || jobStatus.result || {};
@@ -109,7 +109,28 @@ const Header = ({ onResumeAnalyzed }) => {
             }
 
             setLoadingMessage('Submitting analysis job...');
-            const queueResult = await analyseService.queueAnalysis(extractedText);
+            const queueResult = await analyseService.queueAnalysis(extractedText, '', uploadResult.resumeId);
+
+            if (queueResult?.cached && queueResult?.result) {
+                const analysis = queueResult.result;
+
+                setAnalysisResults({ analysis });
+                setShowResults(true);
+
+                if (onResumeAnalyzed) {
+                    onResumeAnalyzed({
+                        atsScore: analysis.atsScore,
+                        improvements: analysis.improvements,
+                        fileName: file.name,
+                        analysis,
+                    });
+                }
+
+                setIsLoading(false);
+                setUploadFileName('');
+                setLoadingMessage('');
+                return;
+            }
 
             if (queueResult?.jobId) {
                 startPollingJob(queueResult.jobId);

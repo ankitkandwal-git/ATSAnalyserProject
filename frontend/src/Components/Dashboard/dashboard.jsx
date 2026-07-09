@@ -1,7 +1,9 @@
 import React from "react";
 import Header from "./header";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
+import AnalysisResults from "./AnalysisResults";
+import { analyseService } from "../../Services/analyseService";
 import { FaFilePdf, FaChartLine, FaLightbulb, FaCheckCircle, FaExclamationCircle, FaClock } from "react-icons/fa";
 
 const Dashboard = () => {
@@ -24,8 +26,40 @@ const Dashboard = () => {
   ]);
 
   const [analysisHistory, setAnalysisHistory] = useState([]);
+  const [selectedAnalysis, setSelectedAnalysis] = useState(null);
+  const [showAnalysisDetails, setShowAnalysisDetails] = useState(false);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const response = await analyseService.getAnalysisHistory();
+        const history = Array.isArray(response?.history) ? response.history : [];
+
+        setAnalysisHistory(history);
+
+        const uploadedCount = history.length;
+        const averageScore = uploadedCount
+          ? Math.round(history.reduce((sum, item) => sum + (item.atsScore || 0), 0) / uploadedCount)
+          : 0;
+        const suggestionCount = history.reduce((sum, item) => sum + (Array.isArray(item.improvements) ? item.improvements.length : 0), 0);
+
+        setStats(prevStats => {
+          const updatedStats = [...prevStats];
+          updatedStats[0].value = uploadedCount;
+          updatedStats[1].value = `${averageScore}%`;
+          updatedStats[2].value = suggestionCount;
+          return updatedStats;
+        });
+      } catch (error) {
+        console.error('Failed to load analysis history:', error);
+      }
+    };
+
+    loadHistory();
+  }, []);
+
   const handleResumeAnalyzed = (analysisData) => {
-  const { atsScore, improvements, fileName } = analysisData;
+    const { atsScore, improvements, fileName, analysis } = analysisData;
     setStats(prevStats => {
       const updatedStats = [...prevStats];
       updatedStats[0].value = (updatedStats[0].value || 0) + 1;
@@ -38,10 +72,19 @@ const Dashboard = () => {
       fileName: fileName || `Resume_${Date.now()}`,
       atsScore: atsScore || 0,
       improvements: Array.isArray(improvements) ? improvements : [],
+      analysis: analysis || {
+        atsScore: atsScore || 0,
+        improvements: Array.isArray(improvements) ? improvements : [],
+      },
       timestamp: new Date().toLocaleString(),
       status: atsScore >= 75 ? 'good' : atsScore >= 50 ? 'medium' : 'low',
     };
-    setAnalysisHistory(prev => [newAnalysis, ...prev].slice(0, 10)); // Keep last 10
+    setAnalysisHistory(prev => [newAnalysis, ...prev.filter(item => item.fileName !== newAnalysis.fileName)].slice(0, 10));
+  };
+
+  const handleViewDetails = (analysis) => {
+    setSelectedAnalysis({ analysis: analysis.analysis || analysis });
+    setShowAnalysisDetails(true);
   };
 
   return (
@@ -49,7 +92,7 @@ const Dashboard = () => {
       <Sidebar />
       <div className="flex flex-col flex-1 bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#312e81]">
         <Header onResumeAnalyzed={handleResumeAnalyzed} />
-        <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+        <main className="flex-1 p-6 overflow-y-auto md:p-10">
           <h1 className="mb-6 text-3xl font-bold text-white">Welcome to your Dashboard</h1>
           {/* Stats Cards */}
           <div className="grid grid-cols-1 gap-6 mb-10 sm:grid-cols-2 lg:grid-cols-3">
@@ -66,20 +109,20 @@ const Dashboard = () => {
           </div>
           <section className="bg-[#181c2f] rounded-2xl p-8 shadow-xl border border-violet-500/10">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+              <h2 className="flex items-center gap-2 text-2xl font-bold text-white">
                 <FaClock className="text-violet-400" />
                 Recent Analysis History
               </h2>
-              <span className="px-3 py-1 text-sm font-semibold text-violet-300 bg-violet-500/10 rounded-full border border-violet-500/20">
+              <span className="px-3 py-1 text-sm font-semibold border rounded-full text-violet-300 bg-violet-500/10 border-violet-500/20">
                 {analysisHistory.length} analyses
               </span>
             </div>
 
             {analysisHistory.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <FaFilePdf className="text-6xl text-violet-400/30 mb-4" />
-                <p className="text-violet-200/60 text-lg">No analyses yet</p>
-                <p className="text-violet-200/40 text-sm">Upload a resume to start analyzing</p>
+                <FaFilePdf className="mb-4 text-6xl text-violet-400/30" />
+                <p className="text-lg text-violet-200/60">No analyses yet</p>
+                <p className="text-sm text-violet-200/40">Upload a resume to start analyzing</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -112,7 +155,7 @@ const Dashboard = () => {
                         </div>
                         <p className="text-sm text-violet-200/60">{analysis.timestamp}</p>
                         <div className="flex items-center gap-2 mt-2">
-                          <FaLightbulb className="text-yellow-400 text-sm" />
+                          <FaLightbulb className="text-sm text-yellow-400" />
                           <p className="text-sm text-violet-300">
                             {analysis.improvements.length} {analysis.improvements.length === 1 ? 'suggestion' : 'suggestions'}
                           </p>
@@ -121,7 +164,10 @@ const Dashboard = () => {
 
                       {/* Action Button */}
                       <div className="flex-shrink-0">
-                        <button className="px-4 py-2 text-sm font-semibold text-white transition-all rounded-lg bg-violet-600/50 hover:bg-violet-600 border border-violet-500/30 hover:border-violet-400">
+                        <button
+                          onClick={() => handleViewDetails(analysis)}
+                          className="px-4 py-2 text-sm font-semibold text-white transition-all border rounded-lg bg-violet-600/50 hover:bg-violet-600 border-violet-500/30 hover:border-violet-400"
+                        >
                           View Details
                         </button>
                       </div>
@@ -132,6 +178,11 @@ const Dashboard = () => {
             )}
           </section>
         </main>
+        <AnalysisResults
+          results={selectedAnalysis}
+          isOpen={showAnalysisDetails}
+          onClose={() => setShowAnalysisDetails(false)}
+        />
       </div>
     </div>
   );

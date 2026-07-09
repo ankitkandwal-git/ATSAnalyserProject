@@ -7,6 +7,7 @@ import authRoutes from "./src/routes/authRoutes.js";
 import resumeRoutes from "./src/routes/resumeRoutes.js";
 import redisRoutes from "./src/routes/redis.js";
 import cloudinary from "./src/config/cloudinary.js";
+import { serverAdapter } from "./src/config/bullBoard.js";
 import "./src/workers/resumeWorker.js";
 dotenv.config();
 
@@ -22,7 +23,7 @@ const allowedOrigins = [
   "https://ats-analyser-project.vercel.app",
   "http://localhost:3000",
   "http://localhost:5173",
-  ...(process.env.FRONTEND_URL 
+  ...(process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
     : [])
 ];
@@ -39,6 +40,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Mount Bull Board so the queue dashboard is available in the browser.
+app.use("/admin/queues", serverAdapter.getRouter());
+
 app.use((req, res, next) => {
   console.log(`[http] ${req.method} ${req.originalUrl}`);
   next();
@@ -53,13 +57,20 @@ mongoose
     console.error("MongoDB Connection Error:", error);
   });
 
+// app.get("/", (req, res) => {
+//   res.json({
+//     success: true,
+//     message: "ATS Resume Analyzer Backend Running",
+//   });
+// });
+
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "ATS Resume Analyzer Backend Running",
-  });
-});
-
+    message: "ATS Resume Analyser running",
+    server: `Backend running on PORT${process.env.PORT || 5000}`
+  })
+})
 
 app.use("/auth", authRoutes);
 app.use("/api/resumes", resumeRoutes);

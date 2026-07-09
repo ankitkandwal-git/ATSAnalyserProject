@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "dev:1": "cross-env PORT=5001 nodemon server.js",
+    "dev:2": "cross-env PORT=5002 nodemon server.js",
+    "dev:3": "cross-env PORT=5003 nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -13,12 +16,15 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@bull-board/api": "^8.1.2",
+    "@bull-board/express": "^8.1.2",
     "@google/generative-ai": "^0.24.1",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.79.3",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.6",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",

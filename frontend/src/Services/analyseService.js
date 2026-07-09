@@ -31,7 +31,7 @@ export const analyseService = {
     }
   },
 
-  async queueAnalysis(resumeText, jobDescription = '') {
+  async queueAnalysis(resumeText, jobDescription = '', resumeId = '') {
     try {
       if (!API_URL) {
         throw new Error('API URL is not configured. Set VITE_API_URL in frontend/.env.');
@@ -45,6 +45,7 @@ export const analyseService = {
       const analyzeResponse = await axios.post(`${API_URL}/api/resumes/analyze`, {
         resumeText,
         jobDescription,
+        resumeId,
       }, {
         headers: {
           'Authorization': token,
@@ -78,6 +79,30 @@ export const analyseService = {
       return response.data;
     } catch (error) {
       console.error('Error in getAnalysisJobStatus:', error);
+      throw error;
+    }
+  },
+
+  async getAnalysisHistory() {
+    try {
+      if (!API_URL) {
+        throw new Error('API URL is not configured. Set VITE_API_URL in frontend/.env.');
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found. Please log in first.');
+      }
+
+      const response = await axios.get(`${API_URL}/api/resumes/history`, {
+        headers: {
+          'Authorization': token,
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error in getAnalysisHistory:', error);
       throw error;
     }
   },
