@@ -2,10 +2,11 @@ import express from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
 import upload from '../middleware/upload.js';
 import { analyzeRateLimiter } from '../middleware/rateLimit.js';
-
+import { testQueueController } from '../controller/queueController.js';
 import {
     uploadResume,
-    analyzeResumeController
+    analyzeResumeController,
+    getResumeJobStatus
 } from '../controller/resumeController.js';
 
 const router = express.Router();
@@ -27,4 +28,7 @@ router.post(
     analyzeResumeController
 );
 
+router.post('/queue-test', testQueueController);
+
+router.get('/jobs/:jobId', getResumeJobStatus);
 export default router;

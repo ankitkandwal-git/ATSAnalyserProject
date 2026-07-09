@@ -4,6 +4,41 @@ import { FaTimes, FaCheckCircle, FaExclamationCircle, FaLightbulb } from "react-
 const AnalysisResults = ({ results, isOpen, onClose }) => {
   if (!isOpen || !results) return null;
 
+  if (results.error) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="w-full max-w-2xl bg-gradient-to-br from-[#0f1419] to-[#1a1f3a] rounded-2xl shadow-2xl border border-violet-500/20 overflow-hidden">
+          <div className="flex items-center justify-between p-6 border-b border-violet-500/20 bg-[#050816]">
+            <h2 className="text-2xl font-bold text-white">Resume Analysis Failed</h2>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <FaTimes className="text-xl" />
+            </button>
+          </div>
+          <div className="p-6">
+            <div className="rounded-xl border border-red-400/20 bg-red-500/5 p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <FaExclamationCircle className="text-red-400 text-xl" />
+                <h3 className="text-lg font-semibold text-red-200">Failure Reason</h3>
+              </div>
+              <p className="text-red-100/90 leading-relaxed">{results.error}</p>
+            </div>
+          </div>
+          <div className="p-6 border-t border-violet-500/20 bg-[#050816]">
+            <button
+              onClick={onClose}
+              className="w-full px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-lg hover:from-violet-500 hover:to-purple-500 transition-all"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const { analysis } = results;
   if (!analysis) return null;
 

@@ -1,9 +1,7 @@
 import fs from "fs";
 import { extractTextFromPDF } from "../utils/resumeParser.js";
 import Resume from "../models/resume.js";
-import { analyzeResume } from "../utils/aiAnalyser.js";
-import redisClient from "../config/redis.js"; 
-import crypto from "crypto";
+import { resumeQueue } from "../queues/resumeQueue.js";
 export const uploadResume = async (req, res) => {
 
     console.log("[resume-upload] ===== START UPLOAD =====");
@@ -81,8 +79,6 @@ export const uploadResume = async (req, res) => {
 };
 
 export const analyzeResumeController = async (req, res) => {
-    const startTime = Date.now();
-
     console.log("[resume-analyze] ===== START ANALYSIS =====");
 
     try {
@@ -95,65 +91,22 @@ export const analyzeResumeController = async (req, res) => {
             });
         }
 
-        // Generate unique cache key
-        const cacheKey = crypto
-            .createHash("sha256")
-            .update(resumeText.trim() + (jobDescription || "").trim())
-            .digest("hex");
-
-        const redisKey = `resume_analysis:${cacheKey}`;
-
-        // Check Redis cache
-        const cachedResult = await redisClient.get(redisKey);
-
-        if (cachedResult) {
-            console.log("🟢 Redis Cache HIT");
-
-            const data = JSON.parse(cachedResult);
-
-            return res.status(200).json({
-                success: true,
-                ...data,
-                cached: true,
-                duration: Date.now() - startTime,
+        if (!jobDescription || !jobDescription.trim()) {
+            return res.status(400).json({
+                success: false,
+                error: "Job description is required",
             });
         }
 
-        console.log("🔴 Redis Cache MISS");
-
-        // Call Gemini AI
-        const analysisResult = await analyzeResume(
+        const job = await resumeQueue.add("resume-analysis", {
             resumeText,
-            jobDescription
-        );
+            jobDescription,
+        });
 
-        const responseData = {
-            analysis: analysisResult.parsed,
-            rawText: analysisResult.rawText,
-            model: analysisResult.model,
-            fallbackUsed: analysisResult.fallbackUsed || false,
-        };
-
-        // Save in Redis for 1 hour
-        await redisClient.set(
-            redisKey,
-            JSON.stringify(responseData),
-            {
-                EX: 3600,
-            }
-        );
-
-        console.log("💾 Saved analysis to Redis");
-
-        // Verify Redis storage (optional, remove later)
-        const verify = await redisClient.get(redisKey);
-        console.log("Redis Verification:", verify ? "SUCCESS" : "FAILED");
-
-        return res.status(200).json({
+        return res.status(202).json({
             success: true,
-            ...responseData,
-            cached: false,
-            duration: Date.now() - startTime,
+            message: "Resume analysis queued successfully",
+            jobId: job.id,
         });
 
     } catch (error) {
@@ -162,6 +115,44 @@ export const analyzeResumeController = async (req, res) => {
         return res.status(500).json({
             success: false,
             error: error.message || "Resume analysis failed",
+        });
+    }
+};
+
+export const getResumeJobStatus = async (req, res) => {
+    try {
+        const { jobId } = req.params;
+        const job = await resumeQueue.getJob(jobId);
+
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                error: "Job not found",
+            });
+        }
+
+        const state = await job.getState();
+        const response = {
+            success: true,
+            jobId: job.id,
+            state,
+        };
+
+        if (state === "completed") {
+            response.result = job.returnvalue;
+        }
+
+        if (state === "failed") {
+            response.reason = job.failedReason;
+        }
+
+        return res.status(200).json(response);
+    } catch (error) {
+        console.error("[resume-job-status] Server Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            error: error.message || "Failed to fetch job status",
         });
     }
 };

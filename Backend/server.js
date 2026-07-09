@@ -7,7 +7,7 @@ import authRoutes from "./src/routes/authRoutes.js";
 import resumeRoutes from "./src/routes/resumeRoutes.js";
 import redisRoutes from "./src/routes/redis.js";
 import cloudinary from "./src/config/cloudinary.js";
-
+import "./src/workers/resumeWorker.js";
 dotenv.config();
 
 console.log('[server] Cloudinary Config Status:', {

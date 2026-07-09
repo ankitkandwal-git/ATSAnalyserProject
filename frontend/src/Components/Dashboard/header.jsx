@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { analyseService } from "../../Services/analyseService";
 import AnalysisResults from "./AnalysisResults";
@@ -11,6 +11,8 @@ const Header = ({ onResumeAnalyzed }) => {
     const [showResults, setShowResults] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [uploadFileName, setUploadFileName] = useState('');
+    const [loadingMessage, setLoadingMessage] = useState('');
+    const pollingRef = useRef(null);
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -21,38 +23,108 @@ const Header = ({ onResumeAnalyzed }) => {
         fileInputRef.current.click();
     };
 
+    useEffect(() => {
+        return () => {
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current);
+            }
+        };
+    }, []);
+
+    const stopPolling = () => {
+        if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+        }
+    };
+
+    const startPollingJob = (jobId) => {
+        setLoadingMessage('Waiting for analysis results...');
+
+        const pollJobStatus = async () => {
+            try {
+                const jobStatus = await analyseService.getAnalysisJobStatus(jobId);
+
+                if (jobStatus?.state === 'completed') {
+                    stopPolling();
+                    setAnalysisResults({ analysis: jobStatus.result });
+                    setShowResults(true);
+
+                    const analysis = jobStatus.result?.analysis || jobStatus.result || {};
+
+                    if (onResumeAnalyzed) {
+                        onResumeAnalyzed({
+                            atsScore: analysis.atsScore,
+                            improvements: analysis.improvements,
+                            fileName: uploadFileName,
+                            analysis,
+                        });
+                    }
+
+                    setIsLoading(false);
+                    setUploadFileName('');
+                    setLoadingMessage('');
+                }
+
+                if (jobStatus?.state === 'failed') {
+                    stopPolling();
+                    setAnalysisResults({ error: jobStatus.reason });
+                    setShowResults(true);
+                    setIsLoading(false);
+                    setUploadFileName('');
+                    setLoadingMessage('');
+                    return;
+                }
+
+                if (jobStatus?.state === 'waiting' || jobStatus?.state === 'active') {
+                    setLoadingMessage(`Analysis ${jobStatus.state}...`);
+                }
+            } catch (error) {
+                stopPolling();
+                setIsLoading(false);
+                setUploadFileName('');
+                setLoadingMessage('');
+                alert(error?.response?.data?.error || error.message || 'Unable to fetch analysis status.');
+            }
+        };
+
+        pollJobStatus();
+        pollingRef.current = setInterval(pollJobStatus, 2000);
+    };
+
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
         
         setIsLoading(true);
         setUploadFileName(file.name);
+        setLoadingMessage('Uploading resume...');
         
         try {
-            const result = await analyseService.analyseFile(file);
-            if (result?.success) {
-                const atsScore = result?.analysis?.atsScore;
-                const improvements = result?.analysis?.improvements;
+            const uploadResult = await analyseService.uploadResume(file);
+            const extractedText = uploadResult?.extractedText;
 
-                setAnalysisResults(result);
-                setShowResults(true);
+            if (!extractedText) {
+                throw new Error(uploadResult?.error || 'No extracted text returned from upload.');
+            }
 
-                if (onResumeAnalyzed) {
-                    onResumeAnalyzed({
-                        atsScore,
-                        improvements,
-                        fileName: file.name,
-                        analysis: result.analysis
-                    });
-                }
+            setLoadingMessage('Submitting analysis job...');
+            const queueResult = await analyseService.queueAnalysis(extractedText);
+
+            if (queueResult?.jobId) {
+                startPollingJob(queueResult.jobId);
             } else {
-                alert(result?.error || 'Analysis failed!');
+                throw new Error('No job ID returned from analysis queue.');
             }
         } catch (err) {
+            stopPolling();
+            setLoadingMessage('');
             alert('Analysis failed!');
         } finally {
-            setIsLoading(false);
-            setUploadFileName('');
+            if (!pollingRef.current) {
+                setIsLoading(false);
+                setUploadFileName('');
+            }
         }
     };
     return(
@@ -139,7 +211,7 @@ const Header = ({ onResumeAnalyzed }) => {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
                 <div className="flex flex-col gap-1">
-                    <p className="text-sm font-semibold text-white">Analyzing Resume...</p>
+                    <p className="text-sm font-semibold text-white">{loadingMessage || 'Analyzing Resume...'}</p>
                     <p className="text-xs text-violet-200">{uploadFileName}</p>
                 </div>
             </div>

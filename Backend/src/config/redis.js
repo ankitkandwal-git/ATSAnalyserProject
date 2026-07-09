@@ -8,6 +8,14 @@ redisClient.on('connect', () =>{
     console.log('✓ Redis connected successfully');
 })
 
-await redisClient.connect()
+redisClient.on('error', (error) => {
+    console.error('Redis connection error:', error);
+});
+
+try {
+    await redisClient.connect();
+} catch (error) {
+    console.error('Redis connection failed during startup:', error);
+}
 
 export default redisClient;
