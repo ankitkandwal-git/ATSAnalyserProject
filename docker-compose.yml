@@ -4,22 +4,36 @@ services:
 
   backend:
     build: ./Backend
-
     container_name: ats-backend
-
     ports:
       - "5000:5000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - ats-network
 
   nginx:
     image: nginx:latest
-
     container_name: ats-nginx
-
     ports:
       - "80:80"
-
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-
     depends_on:
       - backend
+    networks:
+      - ats-network
+
+  redis:
+    image: redis:latest
+    container_name: ats-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ats-network
+
+networks:
+  ats-network:
+    driver: bridge
