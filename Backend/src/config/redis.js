@@ -1,11 +1,13 @@
+import dotenv from 'dotenv';
 import { createClient } from 'redis';
 
-// Use REDIS_URL from environment. In a deployed environment like Render, this MUST be set.
-const REDIS_URL = process.env.REDIS_URL;
+dotenv.config();
 
-if (!REDIS_URL) {
- console.error('REDIS_URL environment variable is not set. Please configure it for Redis client.');
- throw new Error('REDIS_URL environment variable is required for Redis client connection.');
+// Use REDIS_URL from environment. In a deployed environment like Render, this MUST be set.
+const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+
+if (!process.env.REDIS_URL) {
+ console.warn('REDIS_URL environment variable is not set. Falling back to redis://127.0.0.1:6379 for local development.');
 }
 
 const redisClient = createClient({ url: REDIS_URL });

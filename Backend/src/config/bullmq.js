@@ -1,11 +1,13 @@
+import dotenv from 'dotenv';
 import IORedis from 'ioredis';
 
-// Use REDIS_URL from environment. In a deployed environment like Render, this MUST be set.
-const REDIS_URL = process.env.REDIS_URL;
+dotenv.config();
 
-if (!REDIS_URL) {
- console.error('REDIS_URL environment variable is not set. Please configure it for BullMQ.');
- throw new Error('REDIS_URL environment variable is required for BullMQ connection.');
+// Use REDIS_URL from environment. In a deployed environment like Render, this MUST be set.
+const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+
+if (!process.env.REDIS_URL) {
+ console.warn('REDIS_URL environment variable is not set. Falling back to redis://127.0.0.1:6379 for local development.');
 }
 
 const bullmqRedisConnection = new IORedis(REDIS_URL, {

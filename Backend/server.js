@@ -1,6 +1,8 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import mongoose from "mongoose";
 import redisClient from "./src/config/redis.js";
 import authRoutes from "./src/routes/authRoutes.js";
@@ -9,7 +11,6 @@ import redisRoutes from "./src/routes/redis.js";
 import cloudinary from "./src/config/cloudinary.js";
 import { serverAdapter } from "./src/config/bullBoard.js";
 import "./src/workers/resumeWorker.js";
-dotenv.config();
 
 console.log('[server] Cloudinary Config Status:', {
   cloud_name: process.env.CLOUD_NAME ? '✓ SET' : '✗ MISSING',
