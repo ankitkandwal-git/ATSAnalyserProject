@@ -1,9 +1,10 @@
 import fs from "fs";
 import crypto from "crypto";
 import { extractTextFromPDF } from "../utils/resumeParser.js";
+import { analyzeResume } from "../utils/aiAnalyser.js";
 import Resume from "../models/resume.js";
-import { resumeQueue } from "../queues/resumeQueue.js";
-import redisClient from "../config/redis.js";
+import { resumeQueue, isResumeQueueEnabled } from "../queues/resumeQueue.js";
+import redisClient, { isRedisEnabled } from "../config/redis.js";
 
 const buildAnalysisJobId = (resumeText, jobDescription = "") => {
     const normalizedResumeText = resumeText.trim().replace(/\s+/g, " ");
@@ -29,6 +30,10 @@ const buildAnalysisHash = (resumeText, jobDescription = "") => {
 };
 
 const getCachedAnalysis = async (analysisHash) => {
+    if (!isRedisEnabled) {
+        return null;
+    }
+
     const cachedAnalysis = await redisClient.get(buildAnalysisCacheKey(analysisHash));
 
     if (!cachedAnalysis) {
@@ -39,7 +44,7 @@ const getCachedAnalysis = async (analysisHash) => {
 };
 
 const registerAnalysisWaiter = async (resumeId, analysisHash) => {
-    if (!resumeId) {
+    if (!resumeId || !isRedisEnabled) {
         return;
     }
 
@@ -180,6 +185,26 @@ export const analyzeResumeController = async (req, res) => {
 
         const jobId = buildAnalysisJobId(resumeText, jobDescription || "");
 
+        if (!isResumeQueueEnabled || !resumeQueue) {
+            const analysisResult = await analyzeResume(resumeText, jobDescription || "");
+
+            await saveAnalysisToResume({
+                resumeId,
+                analysisHash,
+                analysisStatus: "completed",
+                analysisResult: analysisResult.parsed,
+                analysisError: null,
+            });
+
+            return res.status(200).json({
+                success: true,
+                queued: false,
+                message: "Resume analysis completed without queue",
+                result: analysisResult.parsed,
+                analysisHash,
+            });
+        }
+
         const job = await resumeQueue.add("resume-analysis", {
             resumeText,
             jobDescription: jobDescription || "",
@@ -217,6 +242,13 @@ export const analyzeResumeController = async (req, res) => {
 
 export const getResumeJobStatus = async (req, res) => {
     try {
+        if (!isResumeQueueEnabled || !resumeQueue) {
+            return res.status(503).json({
+                success: false,
+                error: "Queue is currently unavailable",
+            });
+        }
+
         const { jobId } = req.params;
         const job = await resumeQueue.getJob(jobId);
 

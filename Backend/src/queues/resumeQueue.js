@@ -1,8 +1,12 @@
 import {Queue} from 'bullmq';
-import bullmqRedisConnection from '../config/bullmq.js';
+import bullmqRedisConnection, { isBullmqEnabled } from '../config/bullmq.js';
 
-export const resumeQueue = new Queue(
-    "resume-analysis",{
-        connection: bullmqRedisConnection
-    }
-)
+export const isResumeQueueEnabled = Boolean(isBullmqEnabled && bullmqRedisConnection);
+
+export const resumeQueue = isResumeQueueEnabled
+    ? new Queue(
+        "resume-analysis", {
+            connection: bullmqRedisConnection
+        }
+    )
+    : null;

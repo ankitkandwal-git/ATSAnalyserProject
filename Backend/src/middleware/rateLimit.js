@@ -1,15 +1,25 @@
 import {rateLimit} from 'express-rate-limit';
 import {RedisStore} from 'rate-limit-redis';
-import redisClient from '../config/redis.js';
+import redisClient, { isRedisEnabled } from '../config/redis.js';
+
+const redisStoreConfig = isRedisEnabled
+    ? {
+        store: new RedisStore({
+            sendCommand: (...args) => redisClient.sendCommand(args),
+        }),
+    }
+    : {};
+
+if (!isRedisEnabled) {
+    console.warn('[rate-limit] Redis unavailable. Falling back to in-memory rate limiter.');
+}
 
 export const authRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max:10,
     standardHeaders: true,
     legacyHeaders: false,
-    store: new RedisStore({
-        sendCommand: (...args) => redisClient.sendCommand(args),
-    }),
+    ...redisStoreConfig,
     message:{
         success:false,
         message: "Too many requests from this IP, please try again after 15 minutes."
@@ -21,9 +31,7 @@ export const analyzeRateLimiter = rateLimit({
     max:10,
     standardHeaders: true,
     legacyHeaders: false,
-    store: new RedisStore({
-        sendCommand: (...args) => redisClient.sendCommand(args),
-    }),
+    ...redisStoreConfig,
     handler:(req,res) =>{
         return res.status(429).json({
             success:false,

@@ -1,9 +1,16 @@
 import { Router } from 'express';
-import redisClient from '../config/redis.js';
+import redisClient, { isRedisEnabled } from '../config/redis.js';
 
 const router = Router();
 
 router.get('/test', async (req, res) => {
+    if (!isRedisEnabled) {
+        return res.status(503).json({
+            success: false,
+            message: 'Redis is disabled or not configured for this environment.',
+        });
+    }
+
     try {
         const reply = await redisClient.ping();
         res.json({

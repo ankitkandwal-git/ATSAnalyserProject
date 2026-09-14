@@ -9,11 +9,14 @@ const serverAdapter = new ExpressAdapter();
 
 serverAdapter.setBasePath("/admin/queues");
 
-
-createBullBoard({
-  queues: [new BullMQAdapter(resumeQueue)],
-  serverAdapter,
-});
+if (resumeQueue) {
+  createBullBoard({
+    queues: [new BullMQAdapter(resumeQueue)],
+    serverAdapter,
+  });
+} else {
+  console.warn('[bull-board] Queue dashboard started without Redis queue connection.');
+}
 
 
 export { serverAdapter };

@@ -3,28 +3,68 @@ import { createClient } from 'redis';
 
 dotenv.config();
 
-// Use REDIS_URL from environment. In a deployed environment like Render, this MUST be set.
-const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+const FALLBACK_LOCAL_REDIS_URL = 'redis://127.0.0.1:6379';
 
-if (!process.env.REDIS_URL) {
- console.warn('REDIS_URL environment variable is not set. Falling back to redis://127.0.0.1:6379 for local development.');
+const rawRedisUrl = process.env.REDIS_URL?.trim();
+const isRenderRuntime = Boolean(process.env.RENDER) || Boolean(process.env.RENDER_SERVICE_ID);
+
+const isDockerHostAlias = (url) => {
+    try {
+        return new URL(url).hostname === 'redis';
+    } catch {
+        return false;
+    }
+};
+
+let REDIS_URL = rawRedisUrl;
+
+if (!REDIS_URL && process.env.NODE_ENV !== 'production') {
+    REDIS_URL = FALLBACK_LOCAL_REDIS_URL;
 }
 
-const redisClient = createClient({ url: REDIS_URL });
+if (isRenderRuntime && REDIS_URL && isDockerHostAlias(REDIS_URL)) {
+    console.warn('[redis] REDIS_URL uses docker hostname "redis" which is not resolvable on Render. Disable Redis features until REDIS_URL is updated in Render env vars.');
+    REDIS_URL = '';
+}
 
-redisClient.on('connect', () => {
-    console.log('✓ Redis connected successfully');
+export const isRedisEnabled = Boolean(REDIS_URL);
+
+if (!isRedisEnabled) {
+    console.warn('[redis] REDIS_URL is missing or invalid for this runtime. Continuing without Redis-backed features.');
+}
+
+const createNoopRedisClient = () => ({
+    isOpen: false,
+    on: () => {},
+    connect: async () => {},
+    ping: async () => 'PONG (redis-disabled)',
+    get: async () => null,
+    set: async () => 'OK',
+    sAdd: async () => 0,
+    sMembers: async () => [],
+    del: async () => 0,
+    sendCommand: () => {
+        throw new Error('Redis client is disabled.');
+    },
 });
 
-redisClient.on('error', (error) => {
-    console.error('Redis connection error:', error);
-});
+const redisClient = isRedisEnabled
+    ? createClient({ url: REDIS_URL })
+    : createNoopRedisClient();
 
-try {
-    // connect() can be awaited during startup; keep behavior unchanged
-    await redisClient.connect();
-} catch (error) {
-    console.error('Redis connection failed during startup:', error);
+if (isRedisEnabled) {
+    redisClient.on('connect', () => {
+        console.log('✓ Redis connected successfully');
+    });
+
+    redisClient.on('error', (error) => {
+        console.error('Redis connection error:', error);
+    });
+
+    // Never block server startup on Redis connection.
+    redisClient.connect().catch((error) => {
+        console.error('Redis connection failed during startup:', error);
+    });
 }
 
 export default redisClient;
